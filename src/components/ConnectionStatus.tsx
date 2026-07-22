@@ -7,7 +7,7 @@ import {
   open,
   Keyboard,
 } from "@raycast/api";
-import { flagUrl } from "../lib/regions";
+import { flagAsset } from "../lib/regions";
 import { PIA_APP_PATH } from "../lib/pia";
 import { ConnectionState, Region, VpnStatus } from "../types";
 
@@ -67,7 +67,7 @@ export function ConnectionStatus({ status, region, appPath, onToggle }: Props) {
 
   const icon =
     isConnected && region?.countryCode
-      ? { source: flagUrl(region.countryCode) }
+      ? { source: flagAsset(region.countryCode) }
       : { source: label.icon, tintColor: label.color };
 
   const title = isConnected ? regionName : label.title;

@@ -1,5 +1,6 @@
 import { existsSync } from "fs";
 import { run } from "./exec";
+import { isValidRegionId } from "./regions";
 import { AUTO_REGION, ConnectionState, SetupState, VpnStatus } from "../types";
 
 export const PIA_APP_PATH = "/Applications/Private Internet Access.app";
@@ -79,6 +80,9 @@ export async function setRegion(
   cliPath: string,
   regionId: string,
 ): Promise<void> {
+  if (!isValidRegionId(regionId)) {
+    throw new Error(`Refusing to select malformed region "${regionId}"`);
+  }
   await piactl(cliPath, ["set", "region", regionId]);
 }
 

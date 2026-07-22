@@ -118,6 +118,7 @@ export async function toggleVpn(): Promise<void> {
   try {
     const state = await readConnectionState(setup.cliPath);
     if (isActive(state)) {
+      await showHUD("Disconnecting…");
       await disconnect(setup.cliPath);
       const next = await waitForState(
         setup.cliPath,

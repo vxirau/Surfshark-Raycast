@@ -7,7 +7,7 @@ import {
   List,
   Keyboard,
 } from "@raycast/api";
-import { AUTO_REGION_ENTRY, flagUrl } from "../lib/regions";
+import { AUTO_REGION_ENTRY, flagAsset } from "../lib/regions";
 import { Region } from "../types";
 
 interface Props {
@@ -24,7 +24,7 @@ function icon(region: Region): Image.ImageLike {
     return { source: Icon.Bolt, tintColor: Color.Green };
   }
   return region.countryCode
-    ? { source: flagUrl(region.countryCode) }
+    ? { source: flagAsset(region.countryCode) }
     : Icon.Globe;
 }
 

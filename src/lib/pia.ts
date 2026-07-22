@@ -94,14 +94,9 @@ export async function disconnect(cliPath: string): Promise<void> {
   await piactl(cliPath, ["disconnect"], 15_000);
 }
 
-/**
- * Background mode keeps the PIA daemon alive without the GUI, which is what
- * lets `piactl connect` work when the app was never opened. Without it, connect
- * fails whenever the app isn't running.
- */
-export async function enableBackgroundMode(cliPath: string): Promise<void> {
-  await piactl(cliPath, ["background", "enable"], 6000);
-}
+// Note: no wrapper for `piactl background enable` / `set` beyond the region.
+// This extension only connects, disconnects, and selects a region — it never
+// changes how PIA behaves outside of an action the user explicitly triggered.
 
 export async function waitForState(
   cliPath: string,

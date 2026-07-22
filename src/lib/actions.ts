@@ -3,7 +3,6 @@ import {
   connect,
   detectSetup,
   disconnect,
-  enableBackgroundMode,
   isActive,
   readConnectionState,
   readStatus,
@@ -18,20 +17,34 @@ function label(region: Region): string {
   return region.id === AUTO_REGION_ENTRY.id ? "Automatic" : region.name;
 }
 
+/** PIA's own wording when its daemon is idle because the app isn't running. */
+const DAEMON_INACTIVE = /background mode|start the PIA client/i;
+
+export class DaemonInactiveError extends Error {
+  constructor() {
+    super(
+      "PIA's background service is inactive. Open the PIA app, or enable " +
+        "“Allow PIA to run in the background” in its settings.",
+    );
+    this.name = "DaemonInactiveError";
+  }
+}
+
 /**
- * The PIA daemon goes inactive when the desktop app isn't running, and refuses
- * to connect until either the app is launched or background mode is on. Turning
- * background mode on is the quiet fix — it lets Raycast connect without ever
- * opening (and focusing) the PIA window.
+ * Connect, translating PIA's idle-daemon failure into something actionable.
+ *
+ * This deliberately does NOT switch on background mode by itself: that is a
+ * persistent change to how the user's VPN behaves when the app is closed
+ * (it also keeps the killswitch alive), and an extension must not silently
+ * reconfigure a security tool. Surface it and let the user decide.
  */
-async function connectWithDaemonFallback(cliPath: string): Promise<void> {
+async function connectOrExplain(cliPath: string): Promise<void> {
   try {
     await connect(cliPath);
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
-    if (!/background mode|start the PIA client/i.test(message)) throw e;
-    await enableBackgroundMode(cliPath);
-    await connect(cliPath);
+    if (DAEMON_INACTIVE.test(message)) throw new DaemonInactiveError();
+    throw e;
   }
 }
 
@@ -78,7 +91,7 @@ export async function connectToRegion(region: Region): Promise<void> {
       (await readConnectionState(setup.cliPath)) === "Connected";
     await setRegion(setup.cliPath, region.id);
     await showHUD(`Connecting to ${label(region)}…`);
-    await connectWithDaemonFallback(setup.cliPath);
+    await connectOrExplain(setup.cliPath);
 
     // Switching regions restarts an existing tunnel, so the pre-switch
     // "Connected" reading must not be accepted as success.
@@ -134,7 +147,7 @@ export async function toggleVpn(): Promise<void> {
     }
 
     await showHUD("Connecting…");
-    await connectWithDaemonFallback(setup.cliPath);
+    await connectOrExplain(setup.cliPath);
     const next = await waitForState(setup.cliPath, (s) => s === "Connected");
     if (next !== "Connected") {
       await showHUD(`Could not connect (${next})`);

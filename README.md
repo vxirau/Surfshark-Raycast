@@ -24,12 +24,10 @@
 | Command | Action | Mode |
 |---------|--------|------|
 | **Open Detailed** | Browse regions, check status, connect and disconnect | View |
-| **Connect** | Connect using PIA's automatic (fastest) region | No-view |
-| **Connect Most Recent** | Reconnect to the region you used last | No-view |
-| **Disconnect** | Drop the VPN tunnel | No-view |
 | **Toggle Connection** | Connect if off, disconnect if on | No-view |
+| **Connect Most Recent** | Reconnect to the region you used last | No-view |
 
-The no-view commands are silent — they close Raycast and report through a HUD, so they work well bound to hotkeys.
+The no-view commands are silent — they close Raycast and report through a HUD, so they work well bound to hotkeys. A single **Toggle Connection** hotkey covers both directions, so there's no separate connect/disconnect pair to bind.
 
 ## Requirements
 

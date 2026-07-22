@@ -105,37 +105,6 @@ export async function connectToRegion(region: Region): Promise<void> {
   }
 }
 
-export async function disconnectVpn(): Promise<void> {
-  await closeMainWindow({ clearRootSearch: true });
-
-  const setup = await detectSetup();
-  if (setup.stage !== "ready" || !setup.cliPath) {
-    if (setup.appPath) void open(setup.appPath);
-    await showHUD("PIA isn't ready — opening the app");
-    return;
-  }
-
-  try {
-    await disconnect(setup.cliPath);
-    const state = await waitForState(
-      setup.cliPath,
-      (s) => s === "Disconnected",
-      {
-        attempts: 20,
-      },
-    );
-    await showHUD(
-      state === "Disconnected"
-        ? "PIA disconnected"
-        : `Could not disconnect (${state})`,
-    );
-  } catch (e) {
-    await showHUD(
-      `Disconnect failed: ${e instanceof Error ? e.message : String(e)}`,
-    );
-  }
-}
-
 export async function toggleVpn(): Promise<void> {
   await closeMainWindow({ clearRootSearch: true });
 

@@ -28,10 +28,10 @@
       "mode": "view"
     },
     {
-      "name": "connect",
-      "title": "Connect",
+      "name": "toggle",
+      "title": "Toggle Connection",
       "subtitle": "Private Internet Access",
-      "description": "Connect using PIA's automatic (fastest) region.",
+      "description": "Connect if disconnected, disconnect if connected.",
       "mode": "no-view"
     },
     {
@@ -39,20 +39,6 @@
       "title": "Connect Most Recent",
       "subtitle": "Private Internet Access",
       "description": "Reconnect to the region you used last.",
-      "mode": "no-view"
-    },
-    {
-      "name": "disconnect",
-      "title": "Disconnect",
-      "subtitle": "Private Internet Access",
-      "description": "Disconnect the PIA VPN.",
-      "mode": "no-view"
-    },
-    {
-      "name": "toggle",
-      "title": "Toggle Connection",
-      "subtitle": "Private Internet Access",
-      "description": "Connect if disconnected, disconnect if connected.",
       "mode": "no-view"
     }
   ],

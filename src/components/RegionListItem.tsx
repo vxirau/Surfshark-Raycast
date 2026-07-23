@@ -36,6 +36,14 @@ export function RegionListItem({
   onConnect,
   onToggleFavorite,
 }: Props) {
+  // Many regions are just the country ("France", "Albania"), where showing the
+  // country as a subtitle would repeat the title. Only add it when it says
+  // something new — "ES Madrid" is worth pairing with "Spain".
+  const countrySubtitle =
+    region.name.toLowerCase() === region.country.toLowerCase()
+      ? undefined
+      : region.country;
+
   const accessories: List.Item.Accessory[] = [];
 
   if (isCurrent) {
@@ -70,7 +78,7 @@ export function RegionListItem({
     <List.Item
       icon={icon(region)}
       title={region.name}
-      subtitle={subtitle ?? region.country}
+      subtitle={subtitle ?? countrySubtitle}
       keywords={[region.id, region.country, region.countryCode]}
       accessories={accessories}
       actions={

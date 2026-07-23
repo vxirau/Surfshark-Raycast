@@ -1,59 +1,55 @@
-# Private Internet Access for Raycast
+# Private Internet Access
 
-<p align="center">
-  <img src="assets/extension-icon.png" width="128" alt="Private Internet Access for Raycast" />
-</p>
+Control your Private Internet Access VPN without leaving Raycast — connect, switch country, and check your status in a keystroke.
 
-<p align="center">
-  Control the <strong>Private Internet Access</strong> VPN from Raycast.
-  <br />
-  No credentials stored. No GUI window popping up. Just fast, keyboard-driven VPN control.
-</p>
+Built on `piactl`, PIA's own command-line interface, so the desktop app stays the source of truth. Your credentials are never read, stored, or handled by this extension.
 
 ## Features
 
-- **Live status** — connection state, region, VPN IP, protocol, and forwarded port.
-- **Region browser** — all 160+ PIA regions with country flags, searchable by country, city, or region id.
-- **Favorites & recents** — star the regions you actually use; the last five are remembered automatically.
-- **Port-forwarding aware** — regions that support port forwarding are tagged, and the active forwarded port is shown and copyable.
-- **Geo-located regions flagged** — know when a region's IP is registered in-country but hosted elsewhere.
-- **Headless** — connects without launching the PIA window by enabling PIA's background mode on demand.
+**Connect anywhere, fast.** Every PIA region with its country flag, searchable by country, city, or region id. Pick one and you're connected — no need to open the PIA window.
+
+**Status at a glance.** Connection state, active region, VPN IP, protocol, and your forwarded port, all on one row.
+
+**Favorites and recents.** Star the handful of regions you actually use and they stay at the top. Your last five connections are remembered automatically.
+
+**Built for port forwarding.** Regions that support it are tagged, the active forwarded port is shown and copyable, and you can toggle the request without digging through settings.
+
+**Honest about geo-located regions.** PIA registers some IPs in a country while hosting the server elsewhere. Those are tagged, so you know what you're actually getting.
+
+**Hotkey-friendly.** Toggle Connection and Connect Most Recent run silently — Raycast closes and a HUD confirms the result. Bind them and never open a window again.
 
 ## Commands
 
-| Command | Action | Mode |
-|---------|--------|------|
-| **Open Detailed** | Browse regions, check status, connect and disconnect | View |
-| **Toggle Connection** | Connect if off, disconnect if on | No-view |
-| **Connect Most Recent** | Reconnect to the region you used last | No-view |
+| Command | What it does |
+|---|---|
+| **Open Detailed** | Browse regions, check status, connect, disconnect, and change settings |
+| **Toggle Connection** | Connect if disconnected, disconnect if connected |
+| **Connect Most Recent** | Reconnect to the region you used last |
 
-The no-view commands are silent — they close Raycast and report through a HUD, so they work well bound to hotkeys. A single **Toggle Connection** hotkey covers both directions, so there's no separate connect/disconnect pair to bind.
+## Settings
+
+From the action panel (`⌘K`) on the status row:
+
+- **Port forwarding** (`⌘⇧P`) — request a forwarded port on the next connection
+- **LAN access** (`⌘⇧L`) — allow or block local network traffic while connected
+- **Protocol** — switch between WireGuard and OpenVPN
 
 ## Requirements
 
-- **macOS** with the Private Internet Access app installed and signed in.
-- PIA's command-line helper (`piactl`). Enable it in **PIA → Settings → General → Install PIA command-line helper**.
+- macOS with the [Private Internet Access](https://www.privateinternetaccess.com/download/mac-vpn) app installed and signed in.
+- PIA's command-line helper. Enable it in **PIA → Settings → General → Install PIA command-line helper**.
 
-The extension detects each of these and walks you through anything missing.
+The extension checks for both and tells you exactly what's missing if either isn't ready.
 
-## How It Works
+> **Connecting while the PIA app is closed:** PIA's background service is inactive unless the app is running. To connect from Raycast without opening PIA first, turn on **Allow PIA to run in the background** in PIA's settings. This extension will never change that setting for you.
 
-| Layer | Mechanism |
-|-------|-----------|
-| **Control** | `piactl` — PIA's official command-line interface. Every call uses `execFile` with positional arguments, never a shell. |
-| **Region catalog** | PIA's public server list (`serverlist.piaservers.net`), joined to `piactl` region ids to supply country codes, port-forwarding support, and geo flags. |
-| **Credentials** | **Never read or stored.** Sign-in stays entirely inside the PIA app. |
+## Privacy
 
-### Credits
+- **No credentials.** Sign-in stays entirely inside the PIA app.
+- **No third-party requests.** Flags ship with the extension instead of loading from an image CDN, so browsing regions doesn't tell anyone which countries you're looking at. The only network call is to PIA's own public server list.
+- **No surprise connections.** Nothing connects, disconnects, or changes a PIA setting unless you trigger it.
+- **The IP you see is the right one.** `piactl` reports your ISP address under `pubip` even while the tunnel is up, so this extension shows your VPN IP when connected — and only shows your real IP when you're disconnected, clearly labelled as unprotected.
 
-Country flags are rendered from [flag-icons](https://github.com/lipis/flag-icons)
-by Panayiotis Lipiridis, used under the MIT License. They ship with the
-extension rather than loading from an image CDN.
+## Credits
 
-### A note on IP addresses
-
-`piactl get pubip` reports your ISP-assigned address and does **not** change while the tunnel is up. This extension therefore shows `vpnip` (the tunnel address) when connected, and only shows your public IP when disconnected — labelled as unprotected.
-
-## License
-
-MIT
+Country flags are rendered from [flag-icons](https://github.com/lipis/flag-icons) by Panayiotis Lipiridis, used under the MIT License.

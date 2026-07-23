@@ -60,6 +60,12 @@ function stateLabel(state: ConnectionState): {
         color: Color.Orange,
         icon: Icon.ExclamationMark,
       };
+    case "Unknown":
+      return {
+        title: "Status unavailable",
+        color: Color.SecondaryText,
+        icon: Icon.QuestionMark,
+      };
     default:
       return { title: "Not connected", color: Color.Red, icon: Icon.Shield };
   }
@@ -72,6 +78,10 @@ function forwardedPort(value: string | undefined): string | undefined {
 
 function otherProtocol(current: Protocol | undefined): Protocol {
   return current === "wireguard" ? "openvpn" : "wireguard";
+}
+
+function protocolLabel(protocol: Protocol): string {
+  return protocol === "wireguard" ? "WireGuard" : "OpenVPN";
 }
 
 async function applySetting(
@@ -105,7 +115,7 @@ export function ConnectionStatus({
       ? { source: flagAsset(region.countryCode) }
       : { source: label.icon, tintColor: label.color };
 
-  const title = isConnected ? regionName : label.title;
+  const title = isConnected ? (regionName ?? "Connected") : label.title;
   const subtitle = isConnected
     ? [
         status.protocol === "wireguard" ? "WireGuard" : status.protocol,
@@ -113,7 +123,9 @@ export function ConnectionStatus({
       ]
         .filter(Boolean)
         .join("  ·  ")
-    : `Selected: ${regionName}`;
+    : regionName
+      ? `Selected: ${regionName}`
+      : "";
 
   // piactl's `pubip` is the ISP-assigned address and does NOT change while the
   // tunnel is up, so surfacing it as the connected IP would show the user's
@@ -139,13 +151,15 @@ export function ConnectionStatus({
       tooltip: "Forwarded port",
     });
   }
-  if (status.requestPortForward && !port) {
+  if (status.requestPortForward === true && !port) {
     accessories.push({
       tag: { value: "Port FW on", color: Color.SecondaryText },
       tooltip: "Port forwarding requested on next connect",
     });
   }
-  if (!status.allowLan) {
+  // Only claim LAN is blocked when that was actually read as false — an
+  // unreadable setting must not be reported as a restriction that isn't there.
+  if (status.allowLan === false) {
     accessories.push({
       tag: { value: "LAN blocked", color: Color.Orange },
       tooltip: "Local network access is blocked while connected",
@@ -184,56 +198,68 @@ export function ConnectionStatus({
           )}
           {cliPath && (
             <ActionPanel.Section title="Settings">
-              <Action
-                title={
-                  status.requestPortForward
-                    ? "Disable Port Forwarding"
-                    : "Enable Port Forwarding"
-                }
-                icon={status.requestPortForward ? Icon.LockDisabled : Icon.Lock}
-                shortcut={{ modifiers: ["cmd", "shift"], key: "p" }}
-                onAction={() =>
-                  applySetting(
-                    () =>
-                      setRequestPortForward(
-                        cliPath,
-                        !status.requestPortForward,
-                      ),
+              {/* Rendered only when the current value was actually read.
+                  Offering a toggle against an unknown value would flip the
+                  setting the opposite way from what the label promises. */}
+              {status.requestPortForward !== undefined && (
+                <Action
+                  title={
                     status.requestPortForward
-                      ? "Port forwarding disabled"
-                      : "Port forwarding enabled — applies on next connect",
-                    onSettingChanged,
-                  )
-                }
-              />
-              <Action
-                title={
-                  status.allowLan ? "Block LAN Access" : "Allow LAN Access"
-                }
-                icon={status.allowLan ? Icon.EyeDisabled : Icon.Eye}
-                shortcut={{ modifiers: ["cmd", "shift"], key: "l" }}
-                onAction={() =>
-                  applySetting(
-                    () => setAllowLan(cliPath, !status.allowLan),
-                    status.allowLan
-                      ? "LAN access blocked"
-                      : "LAN access allowed",
-                    onSettingChanged,
-                  )
-                }
-              />
-              <Action
-                title={`Switch to ${otherProtocol(status.protocol) === "wireguard" ? "WireGuard" : "OpenVPN"}`}
-                icon={Icon.Switch}
-                shortcut={Keyboard.Shortcut.Common.OpenWith}
-                onAction={() =>
-                  applySetting(
-                    () => setProtocol(cliPath, otherProtocol(status.protocol)),
-                    `Protocol set to ${otherProtocol(status.protocol) === "wireguard" ? "WireGuard" : "OpenVPN"} — reconnect to apply`,
-                    onSettingChanged,
-                  )
-                }
-              />
+                      ? "Disable Port Forwarding"
+                      : "Enable Port Forwarding"
+                  }
+                  icon={
+                    status.requestPortForward ? Icon.LockDisabled : Icon.Lock
+                  }
+                  shortcut={{ modifiers: ["cmd", "shift"], key: "p" }}
+                  onAction={() =>
+                    applySetting(
+                      () =>
+                        setRequestPortForward(
+                          cliPath,
+                          !status.requestPortForward,
+                        ),
+                      status.requestPortForward
+                        ? "Port forwarding disabled"
+                        : "Port forwarding enabled — applies on next connect",
+                      onSettingChanged,
+                    )
+                  }
+                />
+              )}
+              {status.allowLan !== undefined && (
+                <Action
+                  title={
+                    status.allowLan ? "Block LAN Access" : "Allow LAN Access"
+                  }
+                  icon={status.allowLan ? Icon.EyeDisabled : Icon.Eye}
+                  shortcut={{ modifiers: ["cmd", "shift"], key: "l" }}
+                  onAction={() =>
+                    applySetting(
+                      () => setAllowLan(cliPath, !status.allowLan),
+                      status.allowLan
+                        ? "LAN access blocked"
+                        : "LAN access allowed",
+                      onSettingChanged,
+                    )
+                  }
+                />
+              )}
+              {status.protocol !== undefined && (
+                <Action
+                  title={`Switch to ${protocolLabel(otherProtocol(status.protocol))}`}
+                  icon={Icon.Switch}
+                  shortcut={Keyboard.Shortcut.Common.OpenWith}
+                  onAction={() =>
+                    applySetting(
+                      () =>
+                        setProtocol(cliPath, otherProtocol(status.protocol)),
+                      `Protocol set to ${protocolLabel(otherProtocol(status.protocol))} — reconnect to apply`,
+                      onSettingChanged,
+                    )
+                  }
+                />
+              )}
             </ActionPanel.Section>
           )}
           <Action

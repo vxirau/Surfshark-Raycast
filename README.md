@@ -44,6 +44,12 @@ The extension detects each of these and walks you through anything missing.
 | **Region catalog** | PIA's public server list (`serverlist.piaservers.net`), joined to `piactl` region ids to supply country codes, port-forwarding support, and geo flags. |
 | **Credentials** | **Never read or stored.** Sign-in stays entirely inside the PIA app. |
 
+### Credits
+
+Country flags are rendered from [flag-icons](https://github.com/lipis/flag-icons)
+by Panayiotis Lipiridis, used under the MIT License. They ship with the
+extension rather than loading from an image CDN.
+
 ### A note on IP addresses
 
 `piactl get pubip` reports your ISP-assigned address and does **not** change while the tunnel is up. This extension therefore shows `vpnip` (the tunnel address) when connected, and only shows your public IP when disconnected — labelled as unprotected.

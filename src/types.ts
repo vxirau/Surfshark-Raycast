@@ -38,6 +38,10 @@ export interface VpnStatus {
   protocol?: Protocol;
   /** Forwarded port number, or a status word like "Inactive"/"Attempting". */
   portForward?: string;
+  /** Ask for a forwarded port on the next connection. */
+  requestPortForward: boolean;
+  /** Allow traffic to devices on the local network while connected. */
+  allowLan: boolean;
 }
 
 export type SetupStage =

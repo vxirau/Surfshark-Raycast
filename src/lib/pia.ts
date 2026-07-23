@@ -1,7 +1,13 @@
 import { existsSync } from "fs";
 import { run } from "./exec";
 import { isValidRegionId } from "./regions";
-import { AUTO_REGION, ConnectionState, SetupState, VpnStatus } from "../types";
+import {
+  AUTO_REGION,
+  ConnectionState,
+  Protocol,
+  SetupState,
+  VpnStatus,
+} from "../types";
 
 export const PIA_APP_PATH = "/Applications/Private Internet Access.app";
 
@@ -48,15 +54,25 @@ function parseState(value: string | undefined): ConnectionState {
 }
 
 export async function readStatus(cliPath: string): Promise<VpnStatus> {
-  const [state, regionId, vpnIp, publicIp, protocol, portForward] =
-    await Promise.all([
-      get(cliPath, "connectionstate"),
-      get(cliPath, "region"),
-      get(cliPath, "vpnip"),
-      get(cliPath, "pubip"),
-      get(cliPath, "protocol"),
-      get(cliPath, "portforward"),
-    ]);
+  const [
+    state,
+    regionId,
+    vpnIp,
+    publicIp,
+    protocol,
+    portForward,
+    requestPortForward,
+    allowLan,
+  ] = await Promise.all([
+    get(cliPath, "connectionstate"),
+    get(cliPath, "region"),
+    get(cliPath, "vpnip"),
+    get(cliPath, "pubip"),
+    get(cliPath, "protocol"),
+    get(cliPath, "portforward"),
+    get(cliPath, "requestportforward"),
+    get(cliPath, "allowlan"),
+  ]);
 
   return {
     state: parseState(state),
@@ -67,7 +83,34 @@ export async function readStatus(cliPath: string): Promise<VpnStatus> {
     protocol:
       protocol === "openvpn" || protocol === "wireguard" ? protocol : undefined,
     portForward,
+    requestPortForward: requestPortForward === "true",
+    allowLan: allowLan === "true",
   };
+}
+
+/**
+ * Settings the user can change from the action panel. Each is only ever called
+ * from an explicit action — nothing here runs on its own.
+ */
+export async function setRequestPortForward(
+  cliPath: string,
+  enabled: boolean,
+): Promise<void> {
+  await piactl(cliPath, ["set", "requestportforward", String(enabled)]);
+}
+
+export async function setAllowLan(
+  cliPath: string,
+  enabled: boolean,
+): Promise<void> {
+  await piactl(cliPath, ["set", "allowlan", String(enabled)]);
+}
+
+export async function setProtocol(
+  cliPath: string,
+  protocol: Protocol,
+): Promise<void> {
+  await piactl(cliPath, ["set", "protocol", protocol]);
 }
 
 export async function readConnectionState(

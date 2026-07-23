@@ -6,16 +6,26 @@ import {
   List,
   open,
   Keyboard,
+  showToast,
+  Toast,
 } from "@raycast/api";
+import { showFailureToast } from "@raycast/utils";
 import { flagAsset } from "../lib/regions";
-import { PIA_APP_PATH } from "../lib/pia";
-import { ConnectionState, Region, VpnStatus } from "../types";
+import {
+  PIA_APP_PATH,
+  setAllowLan,
+  setProtocol,
+  setRequestPortForward,
+} from "../lib/pia";
+import { ConnectionState, Protocol, Region, VpnStatus } from "../types";
 
 interface Props {
   status: VpnStatus;
   region?: Region;
   appPath?: string;
+  cliPath?: string;
   onToggle: () => void;
+  onSettingChanged: () => void;
 }
 
 function stateLabel(state: ConnectionState): {
@@ -60,7 +70,32 @@ function forwardedPort(value: string | undefined): string | undefined {
   return value && /^\d+$/.test(value) ? value : undefined;
 }
 
-export function ConnectionStatus({ status, region, appPath, onToggle }: Props) {
+function otherProtocol(current: Protocol | undefined): Protocol {
+  return current === "wireguard" ? "openvpn" : "wireguard";
+}
+
+async function applySetting(
+  change: () => Promise<void>,
+  successMessage: string,
+  onDone: () => void,
+) {
+  try {
+    await change();
+    await showToast({ style: Toast.Style.Success, title: successMessage });
+    onDone();
+  } catch (e) {
+    await showFailureToast(e, { title: "Could not change setting" });
+  }
+}
+
+export function ConnectionStatus({
+  status,
+  region,
+  appPath,
+  cliPath,
+  onToggle,
+  onSettingChanged,
+}: Props) {
   const label = stateLabel(status.state);
   const isConnected = status.state === "Connected";
   const regionName = region?.name ?? status.regionId;
@@ -104,6 +139,18 @@ export function ConnectionStatus({ status, region, appPath, onToggle }: Props) {
       tooltip: "Forwarded port",
     });
   }
+  if (status.requestPortForward && !port) {
+    accessories.push({
+      tag: { value: "Port FW on", color: Color.SecondaryText },
+      tooltip: "Port forwarding requested on next connect",
+    });
+  }
+  if (!status.allowLan) {
+    accessories.push({
+      tag: { value: "LAN blocked", color: Color.Orange },
+      tooltip: "Local network access is blocked while connected",
+    });
+  }
   if (!isConnected) {
     accessories.push({ tag: { value: label.title, color: label.color } });
   }
@@ -134,6 +181,60 @@ export function ConnectionStatus({ status, region, appPath, onToggle }: Props) {
               content={port}
               shortcut={{ modifiers: ["cmd", "shift"], key: "i" }}
             />
+          )}
+          {cliPath && (
+            <ActionPanel.Section title="Settings">
+              <Action
+                title={
+                  status.requestPortForward
+                    ? "Disable Port Forwarding"
+                    : "Enable Port Forwarding"
+                }
+                icon={status.requestPortForward ? Icon.LockDisabled : Icon.Lock}
+                shortcut={{ modifiers: ["cmd", "shift"], key: "p" }}
+                onAction={() =>
+                  applySetting(
+                    () =>
+                      setRequestPortForward(
+                        cliPath,
+                        !status.requestPortForward,
+                      ),
+                    status.requestPortForward
+                      ? "Port forwarding disabled"
+                      : "Port forwarding enabled — applies on next connect",
+                    onSettingChanged,
+                  )
+                }
+              />
+              <Action
+                title={
+                  status.allowLan ? "Block LAN Access" : "Allow LAN Access"
+                }
+                icon={status.allowLan ? Icon.EyeDisabled : Icon.Eye}
+                shortcut={{ modifiers: ["cmd", "shift"], key: "l" }}
+                onAction={() =>
+                  applySetting(
+                    () => setAllowLan(cliPath, !status.allowLan),
+                    status.allowLan
+                      ? "LAN access blocked"
+                      : "LAN access allowed",
+                    onSettingChanged,
+                  )
+                }
+              />
+              <Action
+                title={`Switch to ${otherProtocol(status.protocol) === "wireguard" ? "WireGuard" : "OpenVPN"}`}
+                icon={Icon.Switch}
+                shortcut={Keyboard.Shortcut.Common.OpenWith}
+                onAction={() =>
+                  applySetting(
+                    () => setProtocol(cliPath, otherProtocol(status.protocol)),
+                    `Protocol set to ${otherProtocol(status.protocol) === "wireguard" ? "WireGuard" : "OpenVPN"} — reconnect to apply`,
+                    onSettingChanged,
+                  )
+                }
+              />
+            </ActionPanel.Section>
           )}
           <Action
             title="Open Pia App"

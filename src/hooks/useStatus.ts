@@ -6,7 +6,12 @@ const POLL_INTERVAL_MS = 2000;
 /** Refresh the full detail set every Nth poll even if the state looks static. */
 const DETAIL_REFRESH_EVERY = 5;
 
-const EMPTY: VpnStatus = { state: "Disconnected", regionId: AUTO_REGION };
+const EMPTY: VpnStatus = {
+  state: "Disconnected",
+  regionId: AUTO_REGION,
+  requestPortForward: false,
+  allowLan: true,
+};
 
 /**
  * Each `piactl get` is its own subprocess, so reading every field on every tick

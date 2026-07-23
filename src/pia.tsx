@@ -14,7 +14,7 @@ export default function Command() {
   const setup = useSetup();
   const cliPath = setup.stage === "ready" ? setup.cliPath : undefined;
 
-  const { status, isLoading: statusLoading } = useStatus(cliPath);
+  const { status, isLoading: statusLoading, refresh } = useStatus(cliPath);
   const { regions, byId, isLoading: regionsLoading } = useRegions();
   const { favorites, toggle: toggleFavorite } = useFavorites();
   const recents = useRecents();
@@ -66,7 +66,9 @@ export default function Command() {
           status={status}
           region={currentRegion}
           appPath={setup.appPath}
+          cliPath={cliPath}
           onToggle={toggleVpn}
+          onSettingChanged={() => void refresh(true)}
         />
       </List.Section>
 

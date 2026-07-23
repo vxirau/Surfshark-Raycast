@@ -1,23 +1,7 @@
-import {
-  Action,
-  ActionPanel,
-  Color,
-  Icon,
-  List,
-  open,
-  Keyboard,
-  showToast,
-  Toast,
-} from "@raycast/api";
-import { showFailureToast } from "@raycast/utils";
+import { Action, ActionPanel, Color, Icon, List } from "@raycast/api";
 import { flagAsset } from "../lib/regions";
-import {
-  PIA_APP_PATH,
-  setAllowLan,
-  setProtocol,
-  setRequestPortForward,
-} from "../lib/pia";
-import { ConnectionState, Protocol, Region, VpnStatus } from "../types";
+import { ConnectionState, Region, VpnStatus } from "../types";
+import { SettingsActions } from "./SettingsActions";
 
 interface Props {
   status: VpnStatus;
@@ -76,28 +60,6 @@ function forwardedPort(value: string | undefined): string | undefined {
   return value && /^\d+$/.test(value) ? value : undefined;
 }
 
-function otherProtocol(current: Protocol | undefined): Protocol {
-  return current === "wireguard" ? "openvpn" : "wireguard";
-}
-
-function protocolLabel(protocol: Protocol): string {
-  return protocol === "wireguard" ? "WireGuard" : "OpenVPN";
-}
-
-async function applySetting(
-  change: () => Promise<void>,
-  successMessage: string,
-  onDone: () => void,
-) {
-  try {
-    await change();
-    await showToast({ style: Toast.Style.Success, title: successMessage });
-    onDone();
-  } catch (e) {
-    await showFailureToast(e, { title: "Could not change setting" });
-  }
-}
-
 export function ConnectionStatus({
   status,
   region,
@@ -108,6 +70,7 @@ export function ConnectionStatus({
 }: Props) {
   const label = stateLabel(status.state);
   const isConnected = status.state === "Connected";
+  const isUnknown = status.state === "Unknown";
   const regionName = region?.name ?? status.regionId;
 
   const icon =
@@ -137,13 +100,14 @@ export function ConnectionStatus({
       text: status.vpnIp,
       tooltip: "VPN IP",
     });
-  } else if (!isConnected && status.publicIp) {
+  } else if (!isConnected && !isUnknown && status.publicIp) {
     accessories.push({
       icon: { source: Icon.Eye, tintColor: Color.Orange },
       text: status.publicIp,
       tooltip: "Your unprotected public IP",
     });
   }
+
   const port = forwardedPort(status.portForward);
   if (port) {
     accessories.push({
@@ -177,11 +141,16 @@ export function ConnectionStatus({
       accessories={accessories}
       actions={
         <ActionPanel>
-          <Action
-            title={isConnected ? "Disconnect" : "Connect"}
-            icon={isConnected ? Icon.XMarkCircle : Icon.Bolt}
-            onAction={onToggle}
-          />
+          {/* Hidden when the state is unreadable: the label would have to
+              guess a direction, and acting on that guess is what turns a
+              disconnect request into a connection. */}
+          {!isUnknown && (
+            <Action
+              title={isConnected ? "Disconnect" : "Connect"}
+              icon={isConnected ? Icon.XMarkCircle : Icon.Bolt}
+              onAction={onToggle}
+            />
+          )}
           {isConnected && status.vpnIp && (
             <Action.CopyToClipboard
               title="Copy VPN IP"
@@ -196,77 +165,11 @@ export function ConnectionStatus({
               shortcut={{ modifiers: ["cmd", "shift"], key: "i" }}
             />
           )}
-          {cliPath && (
-            <ActionPanel.Section title="Settings">
-              {/* Rendered only when the current value was actually read.
-                  Offering a toggle against an unknown value would flip the
-                  setting the opposite way from what the label promises. */}
-              {status.requestPortForward !== undefined && (
-                <Action
-                  title={
-                    status.requestPortForward
-                      ? "Disable Port Forwarding"
-                      : "Enable Port Forwarding"
-                  }
-                  icon={
-                    status.requestPortForward ? Icon.LockDisabled : Icon.Lock
-                  }
-                  shortcut={{ modifiers: ["cmd", "shift"], key: "p" }}
-                  onAction={() =>
-                    applySetting(
-                      () =>
-                        setRequestPortForward(
-                          cliPath,
-                          !status.requestPortForward,
-                        ),
-                      status.requestPortForward
-                        ? "Port forwarding disabled"
-                        : "Port forwarding enabled — applies on next connect",
-                      onSettingChanged,
-                    )
-                  }
-                />
-              )}
-              {status.allowLan !== undefined && (
-                <Action
-                  title={
-                    status.allowLan ? "Block LAN Access" : "Allow LAN Access"
-                  }
-                  icon={status.allowLan ? Icon.EyeDisabled : Icon.Eye}
-                  shortcut={{ modifiers: ["cmd", "shift"], key: "l" }}
-                  onAction={() =>
-                    applySetting(
-                      () => setAllowLan(cliPath, !status.allowLan),
-                      status.allowLan
-                        ? "LAN access blocked"
-                        : "LAN access allowed",
-                      onSettingChanged,
-                    )
-                  }
-                />
-              )}
-              {status.protocol !== undefined && (
-                <Action
-                  title={`Switch to ${protocolLabel(otherProtocol(status.protocol))}`}
-                  icon={Icon.Switch}
-                  shortcut={Keyboard.Shortcut.Common.OpenWith}
-                  onAction={() =>
-                    applySetting(
-                      () =>
-                        setProtocol(cliPath, otherProtocol(status.protocol)),
-                      `Protocol set to ${protocolLabel(otherProtocol(status.protocol))} — reconnect to apply`,
-                      onSettingChanged,
-                    )
-                  }
-                />
-              )}
-            </ActionPanel.Section>
-          )}
-          <Action
-            title="Open Pia App"
-            icon={Icon.AppWindow}
-            shortcut={Keyboard.Shortcut.Common.Open}
-            onAction={() => open(appPath ?? PIA_APP_PATH)}
+          <SettingsActions
+            status={status}
+            cliPath={cliPath}
+            appPath={appPath}
+            onSettingChanged={onSettingChanged}
           />
         </ActionPanel>
       }

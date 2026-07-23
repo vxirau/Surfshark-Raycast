@@ -61,8 +61,13 @@ export default function Command() {
       subtitle={subtitle}
       isCurrent={status.regionId === region.id}
       isFavorite={favorites.has(region.id)}
+      status={status}
+      cliPath={cliPath}
+      appPath={setup.appPath}
       onConnect={() => connectToRegion(region)}
       onToggleFavorite={() => toggleFavorite(region.id)}
+      onDisconnect={toggleVpn}
+      onSettingChanged={() => void refresh(true)}
     />
   );
 
